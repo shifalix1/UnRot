@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Unrot">
+<meta name="theme-color" content="#0e0e0e">
+<title>Unrot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2a2a2a;
+    --amber: #e8a030;
+    --amber-dim: #9a6820;
+    --green: #4caf7d;
+    --green-dim: #2a6147;
+    --red: #e05555;
+    --text: #f0ead8;
+    --text-dim: #7a7060;
+    --text-mid: #b0a898;
+    --radius: 20px;
+    --tab-h: 72px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+/* LAYOUT */
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.screen { display: none; flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 0 calc(var(–tab-h) + var(–safe-bottom) + 16px); }
+.screen.active { display: block; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* TABS */
+nav {
+position: fixed; bottom: 0; left: 0; right: 0;
+height: calc(var(–tab-h) + var(–safe-bottom));
+padding-bottom: var(–safe-bottom);
+background: rgba(14,14,14,0.95);
+backdrop-filter: blur(20px);
+border-top: 1px solid var(–border);
+display: flex; z-index: 100;
+}
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: all 0.2s; opacity: 0.4; }
+.tab.active { opacity: 1; }
+.tab-icon { font-size: 22px; transition: transform 0.2s; }
+.tab.active .tab-icon { transform: scale(1.1); }
+.tab-label { font-size: 10px; font-family: ‘Syne’, sans-serif; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(–text-mid); }
+.tab.active .tab-label { color: var(–amber); }
+
+/* HEADER */
+.header { padding: 56px 20px 12px; display: flex; align-items: flex-end; justify-content: space-between; }
+.header-title { font-family: ‘Syne’, sans-serif; font-size: 28px; font-weight: 800; }
+.header-sub { font-size: 13px; color: var(–text-dim); margin-top: 2px; }
+
+/* CREDITS PILL */
+.credits-badge {
+background: linear-gradient(135deg, #2a2010, #1a1a10);
+border: 1px solid var(–amber-dim);
+border-radius: 100px;
+padding: 8px 16px;
+display: flex; align-items: center; gap: 6px;
+font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 18px; color: var(–amber);
+}
+.credits-badge span { font-size: 13px; color: var(–amber-dim); font-weight: 400; }
+
+/* BRAIN MASCOT */
+.brain-container { display: flex; flex-direction: column; align-items: center; padding: 8px 20px 0; }
+.brain-wrap { position: relative; width: 160px; height: 160px; }
+.brain-svg { width: 100%; height: 100%; }
+.brain-glow {
+position: absolute; inset: -20px;
+border-radius: 50%;
+background: radial-gradient(circle, var(–brain-color, #e8a030) 0%, transparent 70%);
+opacity: 0.15;
+transition: all 1s ease;
+animation: pulse-glow 3s ease-in-out infinite;
+}
+@keyframes pulse-glow { 0%,100% { opacity: 0.12; transform: scale(0.9); } 50% { opacity: 0.22; transform: scale(1.1); } }
+.brain-label { margin-top: 12px; font-family: ‘Syne’, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.05em; }
+.brain-sublabel { font-size: 12px; color: var(–text-dim); margin-top: 2px; }
+
+/* HEALTH BAR */
+.health-section { padding: 16px 20px 0; }
+.health-label { display: flex; justify-content: space-between; font-size: 12px; color: var(–text-dim); margin-bottom: 8px; font-family: ‘Syne’, sans-serif; letter-spacing: 0.04em; }
+.health-track { height: 8px; background: var(–surface2); border-radius: 100px; overflow: hidden; }
+.health-fill { height: 100%; border-radius: 100px; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), background 1s; }
+
+/* STREAK ROW */
+.streak-row { display: flex; gap: 10px; padding: 16px 20px 0; }
+.streak-card { flex: 1; background: var(–surface); border: 1px solid var(–border); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.streak-num { font-family: ‘Syne’, sans-serif; font-size: 24px; font-weight: 800; color: var(–amber); }
+.streak-lbl { font-size: 11px; color: var(–text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* SECTION TITLES */
+.section-title { padding: 20px 20px 10px; font-family: ‘Syne’, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(–text-dim); }
+
+/* HABIT CARDS */
+.habit-card {
+margin: 0 16px 10px;
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: var(–radius);
+padding: 16px;
+display: flex; align-items: center; gap: 14px;
+cursor: pointer;
+transition: all 0.2s;
+position: relative; overflow: hidden;
+}
+.habit-card:active { transform: scale(0.98); }
+.habit-card.done { border-color: var(–green-dim); background: #141f18; }
+.habit-card.done::after { content: ‘’; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(76,175,125,0.04), transparent); }
+.habit-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; background: var(–surface2); transition: all 0.3s; }
+.habit-card.done .habit-icon { background: rgba(76,175,125,0.15); }
+.habit-info { flex: 1; }
+.habit-name { font-family: ‘Syne’, sans-serif; font-size: 15px; font-weight: 700; }
+.habit-desc { font-size: 12px; color: var(–text-dim); margin-top: 2px; }
+.habit-reward { display: flex; align-items: center; gap: 4px; font-family: ‘Syne’, sans-serif; font-size: 14px; font-weight: 700; color: var(–amber); flex-shrink: 0; }
+.habit-reward.earned { color: var(–green); }
+.habit-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(–border); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; transition: all 0.3s; }
+.habit-card.done .habit-check { background: var(–green); border-color: var(–green); }
+
+/* HABIT PICKER */
+.picker-modal { background: var(–surface); border-radius: 28px 28px 0 0; padding: 24px 0 0; width: 100%; max-width: 500px; animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 88vh; display: flex; flex-direction: column; }
+.picker-header { padding: 0 20px 16px; flex-shrink: 0; }
+.picker-scroll { overflow-y: auto; flex: 1; padding-bottom: calc(16px + var(–safe-bottom)); }
+.picker-scroll::-webkit-scrollbar { display: none; }
+.cat-label { padding: 16px 20px 6px; font-family: ‘Syne’, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(–amber); }
+.picker-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; cursor: pointer; transition: background 0.15s; }
+.picker-row:active { background: var(–surface2); }
+.picker-row-icon { width: 38px; height: 38px; border-radius: 10px; background: var(–surface2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.picker-row-info { flex: 1; }
+.picker-row-name { font-family: ‘Syne’, sans-serif; font-size: 14px; font-weight: 700; }
+.picker-row-meta { font-size: 11px; color: var(–text-dim); margin-top: 2px; }
+.picker-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(–border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; }
+.picker-check.on { background: var(–amber); border-color: var(–amber); color: #0e0e0e; }
+.edit-habits-btn { margin: 8px 16px 4px; padding: 10px 16px; background: var(–surface); border: 1px solid var(–border); border-radius: 12px; font-family: ‘Syne’, sans-serif; font-size: 13px; font-weight: 700; color: var(–text-mid); cursor: pointer; width: calc(100% - 32px); letter-spacing: 0.03em; transition: all 0.2s; }
+.edit-habits-btn:active { background: var(–surface2); }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(–surface); border-radius: 28px 28px 0 0; padding: 24px 20px calc(24px + var(–safe-bottom)); width: 100%; max-width: 500px; animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 40px; height: 4px; background: var(–border); border-radius: 100px; margin: 0 auto 20px; }
+.modal-title { font-family: ‘Syne’, sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+.modal-sub { font-size: 13px; color: var(–text-dim); margin-bottom: 20px; }
+.photo-area { border: 2px dashed var(–border); border-radius: 16px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; }
+.photo-area:active { border-color: var(–amber); background: rgba(232,160,48,0.05); }
+.photo-area img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+.photo-area-text { font-size: 13px; color: var(–text-dim); }
+.btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-family: ‘Syne’, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.2s; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: linear-gradient(135deg, var(–amber), #c47820); color: #0e0e0e; }
+.btn-secondary { background: var(–surface2); color: var(–text-mid); margin-top: 8px; }
+.btn-green { background: linear-gradient(135deg, var(–green), #2a8a55); color: #0e0e0e; }
+.btn-red { background: linear-gradient(135deg, var(–red), #a03030); color: #fff; }
+
+/* SPEND SCREEN */
+.spend-hero { padding: 40px 20px 20px; text-align: center; }
+.spend-credits-big { font-family: ‘Syne’, sans-serif; font-size: 72px; font-weight: 800; color: var(–amber); line-height: 1; }
+.spend-credits-lbl { font-size: 14px; color: var(–text-dim); margin-top: 4px; }
+.unlock-card { margin: 0 16px 10px; background: var(–surface); border: 1px solid var(–border); border-radius: var(–radius); padding: 18px; }
+.unlock-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.unlock-icon { font-size: 28px; }
+.unlock-name { font-family: ‘Syne’, sans-serif; font-size: 16px; font-weight: 700; }
+.unlock-desc { font-size: 12px; color: var(–text-dim); }
+.time-picker { display: flex; gap: 8px; margin-bottom: 14px; }
+.time-chip { flex: 1; padding: 10px 4px; background: var(–surface2); border: 1px solid var(–border); border-radius: 10px; text-align: center; font-family: ‘Syne’, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.time-chip.selected { background: rgba(232,160,48,0.15); border-color: var(–amber); color: var(–amber); }
+.cost-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(–text-dim); margin-bottom: 12px; }
+.cost-val { font-family: ‘Syne’, sans-serif; font-weight: 700; color: var(–amber); font-size: 15px; }
+
+/* ACTIVE TIMER */
+.timer-overlay { display: none; position: fixed; inset: 0; background: var(–bg); z-index: 150; flex-direction: column; align-items: center; justify-content: center; }
+.timer-overlay.open { display: flex; }
+.timer-ring-wrap { position: relative; width: 220px; height: 220px; margin-bottom: 24px; }
+.timer-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.timer-ring-bg { fill: none; stroke: var(–surface2); stroke-width: 8; }
+.timer-ring-fill { fill: none; stroke: var(–green); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.timer-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.timer-time { font-family: ‘Syne’, sans-serif; font-size: 48px; font-weight: 800; }
+.timer-app-name { font-size: 13px; color: var(–text-dim); margin-top: 4px; }
+.timer-title { font-family: ‘Syne’, sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.timer-sub { font-size: 13px; color: var(–text-dim); margin-bottom: 32px; }
+
+/* PROGRESS SCREEN */
+.progress-header { padding: 56px 20px 20px; }
+.progress-title { font-family: ‘Syne’, sans-serif; font-size: 28px; font-weight: 800; }
+.day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 0 20px; margin-bottom: 20px; }
+.day-cell { aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-family: ‘Syne’, sans-serif; font-weight: 700; }
+.day-cell.today { border: 1px solid var(–amber); }
+.day-cell.filled { background: var(–green); }
+.day-cell.partial { background: var(–amber-dim); }
+.day-cell.empty { background: var(–surface); }
+.day-lbl { font-size: 10px; text-align: center; color: var(–text-dim); margin-bottom: 8px; }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 20px; }
+.stat-card { background: var(–surface); border: 1px solid var(–border); border-radius: 16px; padding: 16px; }
+.stat-num { font-family: ‘Syne’, sans-serif; font-size: 28px; font-weight: 800; color: var(–amber); }
+.stat-lbl { font-size: 11px; color: var(–text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+.history-item { margin: 0 16px 8px; padding: 14px 16px; background: var(–surface); border-radius: 14px; border: 1px solid var(–border); display: flex; justify-content: space-between; align-items: center; }
+.history-name { font-size: 14px; font-weight: 500; }
+.history-time { font-size: 12px; color: var(–text-dim); margin-top: 2px; }
+.history-credits { font-family: ‘Syne’, sans-serif; font-size: 14px; font-weight: 700; color: var(–green); }
+
+/* SLEEP SCREEN */
+.sleep-hero { padding: 40px 20px 24px; text-align: center; }
+.sleep-emoji { font-size: 64px; margin-bottom: 12px; }
+.sleep-title { font-family: ‘Syne’, sans-serif; font-size: 24px; font-weight: 800; }
+.sleep-sub { font-size: 13px; color: var(–text-dim); margin-top: 6px; line-height: 1.6; }
+.sleep-card { margin: 0 16px 12px; background: var(–surface); border: 1px solid var(–border); border-radius: var(–radius); padding: 18px; }
+.sleep-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.sleep-card-title { font-family: ‘Syne’, sans-serif; font-size: 15px; font-weight: 700; }
+.toggle { width: 48px; height: 28px; background: var(–surface2); border-radius: 100px; position: relative; cursor: pointer; transition: background 0.3s; border: 1px solid var(–border); }
+.toggle.on { background: var(–green); border-color: var(–green); }
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+.toggle.on .toggle-thumb { transform: translateX(20px); }
+.time-input { width: 100%; background: var(–surface2); border: 1px solid var(–border); border-radius: 12px; padding: 12px 14px; color: var(–text); font-family: ‘Syne’, sans-serif; font-size: 22px; font-weight: 700; text-align: center; outline: none; }
+.time-input:focus { border-color: var(–amber); }
+.sleep-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(–border); }
+.sleep-row:last-child { border-bottom: none; }
+.sleep-row-label { font-size: 14px; }
+.sleep-row-sub { font-size: 12px; color: var(–text-dim); margin-top: 1px; }
+.guide-card { margin: 0 16px 10px; background: linear-gradient(135deg, #1a140a, #120e06); border: 1px solid var(–amber-dim); border-radius: var(–radius); padding: 18px; }
+.guide-title { font-family: ‘Syne’, sans-serif; font-size: 14px; font-weight: 700; color: var(–amber); margin-bottom: 10px; }
+.guide-step { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; font-size: 13px; color: var(–text-mid); line-height: 1.5; }
+.guide-num { width: 20px; height: 20px; border-radius: 50%; background: var(–amber-dim); color: var(–amber); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+/* TOAST */
+.toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-80px); background: var(–green); color: #0e0e0e; padding: 12px 20px; border-radius: 100px; font-family: ‘Syne’, sans-serif; font-weight: 700; font-size: 14px; z-index: 300; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* CREDIT BURST ANIM */
+@keyframes float-up { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.4); } }
+.credit-burst { position: fixed; pointer-events: none; font-family: ‘Syne’, sans-serif; font-size: 20px; font-weight: 800; color: var(–amber); z-index: 400; animation: float-up 1s ease forwards; }
+</style>
+
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME SCREEN -->
+
+  <div class="screen active" id="screen-home">
+    <div class="header">
+      <div>
+        <div class="header-title">Good morning 🌱</div>
+        <div class="header-sub" id="date-label">Today's habits</div>
+      </div>
+      <div class="credits-badge" id="credits-display">
+        <span>⚡</span><span id="credit-count">0</span><span>credits</span>
+      </div>
+    </div>
+
+```
+<!-- BRAIN MASCOT -->
+<div class="brain-container">
+  <div class="brain-wrap">
+    <div class="brain-glow" id="brain-glow"></div>
+    <svg class="brain-svg" id="brain-svg" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Brain shape made of circles/blobs -->
+      <g id="brain-body">
+        <ellipse cx="80" cy="85" rx="42" ry="38" fill="#2a2010"/>
+        <ellipse cx="58" cy="72" rx="26" ry="28" fill="#332810"/>
+        <ellipse cx="102" cy="72" rx="26" ry="28" fill="#332810"/>
+        <ellipse cx="80" cy="60" rx="30" ry="24" fill="#3d3018"/>
+        <!-- Wrinkle lines -->
+        <path d="M62 68 Q68 62 74 68" stroke="#5a4820" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M86 68 Q92 62 98 68" stroke="#5a4820" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M70 80 Q80 74 90 80" stroke="#5a4820" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M65 90 Q72 85 80 90 Q88 85 95 90" stroke="#5a4820" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <!-- Brain stem -->
+        <rect x="72" y="118" width="16" height="14" rx="6" fill="#2a2010"/>
+        <!-- Eyes -->
+        <circle id="eye-l" cx="66" cy="82" r="6" fill="#1a1408"/>
+        <circle id="eye-r" cx="94" cy="82" r="6" fill="#1a1408"/>
+        <circle id="pupil-l" cx="67" cy="81" r="3" fill="#e8a030"/>
+        <circle id="pupil-r" cx="95" cy="81" r="3" fill="#e8a030"/>
+        <!-- Mouth -->
+        <path id="brain-mouth" d="M72 96 Q80 102 88 96" stroke="#5a4820" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      </g>
+    </svg>
+  </div>
+  <div class="brain-label" id="brain-state-label">Feeling okay</div>
+  <div class="brain-sublabel" id="brain-state-sub">Complete habits to recharge</div>
+</div>
+
+<!-- HEALTH BAR -->
+<div class="health-section">
+  <div class="health-label">
+    <span>BRAIN HEALTH</span>
+    <span id="health-pct">0%</span>
+  </div>
+  <div class="health-track">
+    <div class="health-fill" id="health-fill" style="width:0%; background: var(--red);"></div>
+  </div>
+</div>
+
+<!-- STREAK ROW -->
+<div class="streak-row">
+  <div class="streak-card">
+    <div class="streak-num" id="streak-count">0</div>
+    <div class="streak-lbl">Day Streak 🔥</div>
+  </div>
+  <div class="streak-card">
+    <div class="streak-num" id="today-done-count">0/6</div>
+    <div class="streak-lbl">Done Today</div>
+  </div>
+  <div class="streak-card">
+    <div class="streak-num" id="total-credits-earned">0</div>
+    <div class="streak-lbl">Total Earned</div>
+  </div>
+</div>
+
+<div class="section-title">TODAY'S HABITS</div>
+<button class="edit-habits-btn" onclick="openPicker()">✏️ Edit habit list (pick from 24 habits)</button>
+<div id="habit-list"></div>
+```
+
+  </div>
+
+  <!-- SPEND SCREEN -->
+
+  <div class="screen" id="screen-spend">
+    <div class="spend-hero">
+      <div class="spend-credits-big" id="spend-credit-big">0</div>
+      <div class="spend-credits-lbl">brain credits available</div>
+    </div>
+
+```
+<div class="section-title">UNLOCK AN APP SESSION</div>
+
+<div id="unlock-list"></div>
+
+<div class="section-title">HOW IT WORKS</div>
+<div class="guide-card" style="margin-bottom:10px;">
+  <div class="guide-step"><div class="guide-num">1</div>Pick an app below and how long you want to use it</div>
+  <div class="guide-step"><div class="guide-num">2</div>Spend your credits to start a countdown timer</div>
+  <div class="guide-step"><div class="guide-num">3</div>When the timer ends, close the app — you've earned it!</div>
+  <div class="guide-step"><div class="guide-num">4</div>Since this is a PWA, actual blocking happens via iOS Screen Time (see Sleep tab for setup guide)</div>
+</div>
+```
+
+  </div>
+
+  <!-- PROGRESS SCREEN -->
+
+  <div class="screen" id="screen-progress">
+    <div class="progress-header">
+      <div class="progress-title">Your Progress</div>
+    </div>
+
+```
+<div class="section-title">LAST 28 DAYS</div>
+<div style="padding: 0 20px; display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px;">
+  <div class="day-lbl">M</div><div class="day-lbl">T</div><div class="day-lbl">W</div>
+  <div class="day-lbl">T</div><div class="day-lbl">F</div><div class="day-lbl">S</div><div class="day-lbl">S</div>
+</div>
+<div class="day-grid" id="day-grid"></div>
+
+<div class="stat-grid" id="stat-grid"></div>
+
+<div class="section-title">RECENT HISTORY</div>
+<div id="history-list"></div>
+```
+
+  </div>
+
+  <!-- SLEEP SCREEN -->
+
+  <div class="screen" id="screen-sleep">
+    <div class="sleep-hero">
+      <div class="sleep-emoji">🌙</div>
+      <div class="sleep-title">Sleep Schedule</div>
+      <div class="sleep-sub">Block distractions before bed and first thing in the morning so your brain can rest and reset.</div>
+    </div>
+
+```
+<div class="sleep-card">
+  <div class="sleep-card-header">
+    <div>
+      <div class="sleep-card-title">Bedtime Mode</div>
+      <div style="font-size:12px;color:var(--text-dim)">Block apps from this time onward</div>
+    </div>
+    <div class="toggle" id="bedtime-toggle" onclick="toggleSleep('bedtime')">
+      <div class="toggle-thumb"></div>
+    </div>
+  </div>
+  <input type="time" class="time-input" id="bedtime-time" value="22:00">
+</div>
+
+<div class="sleep-card">
+  <div class="sleep-card-header">
+    <div>
+      <div class="sleep-card-title">Morning Block</div>
+      <div style="font-size:12px;color:var(--text-dim)">Stay off your phone until you've earned credits</div>
+    </div>
+    <div class="toggle" id="morning-toggle" onclick="toggleSleep('morning')">
+      <div class="toggle-thumb"></div>
+    </div>
+  </div>
+  <input type="time" class="time-input" id="morning-time" value="08:00">
+</div>
+
+<div class="section-title">IOS SCREEN TIME SETUP</div>
+<div class="guide-card">
+  <div class="guide-title">📱 How to manually block apps with Screen Time</div>
+  <div class="guide-step"><div class="guide-num">1</div>Open <strong>Settings → Screen Time</strong> on your iPhone and tap "Turn On Screen Time"</div>
+  <div class="guide-step"><div class="guide-num">2</div>Tap <strong>App Limits</strong> → Add Limit → choose apps (e.g. Social Networking)</div>
+  <div class="guide-step"><div class="guide-num">3</div>Set a very low daily limit (1 min) and enable <strong>"Block at End of Limit"</strong></div>
+  <div class="guide-step"><div class="guide-num">4</div>Set a Screen Time passcode that is NOT your regular passcode — ask a friend to set it so you can't easily override</div>
+  <div class="guide-step"><div class="guide-num">5</div>When you earn credits here, ask your friend to temporarily lift the block for your session</div>
+</div>
+
+<div class="section-title">MORNING ROUTINE CHECKLIST</div>
+<div class="sleep-card">
+  <div id="morning-checklist"></div>
+</div>
+```
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+
+  <nav>
+    <div class="tab active" onclick="switchTab('home')" id="tab-home">
+      <div class="tab-icon">🧠</div>
+      <div class="tab-label">Brain</div>
+    </div>
+    <div class="tab" onclick="switchTab('spend')" id="tab-spend">
+      <div class="tab-icon">⚡</div>
+      <div class="tab-label">Spend</div>
+    </div>
+    <div class="tab" onclick="switchTab('progress')" id="tab-progress">
+      <div class="tab-icon">📈</div>
+      <div class="tab-label">Progress</div>
+    </div>
+    <div class="tab" onclick="switchTab('sleep')" id="tab-sleep">
+      <div class="tab-icon">🌙</div>
+      <div class="tab-label">Sleep</div>
+    </div>
+  </nav>
+</div>
+
+<!-- HABIT PICKER MODAL -->
+
+<div class="modal-overlay" id="picker-modal">
+  <div class="picker-modal">
+    <div class="picker-header">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="modal-title">Choose Your Habits</div>
+          <div class="modal-sub" id="picker-count-label">Select which habits appear daily</div>
+        </div>
+        <button class="btn btn-primary" style="width:auto;padding:10px 18px;font-size:13px;" onclick="closePicker()">Done</button>
+      </div>
+    </div>
+    <div class="picker-scroll" id="picker-scroll"></div>
+  </div>
+</div>
+
+<!-- HABIT MODAL -->
+
+<div class="modal-overlay" id="habit-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-habit-name">Walk 20 minutes</div>
+    <div class="modal-sub" id="modal-habit-desc">Take a 20 min walk outside. Fresh air resets dopamine.</div>
+    <div class="photo-area" id="photo-area" onclick="triggerPhoto()">
+      <img id="photo-preview" style="display:none;">
+      <div id="photo-placeholder">
+        <div style="font-size:36px">📸</div>
+        <div class="photo-area-text">Tap to take proof photo (optional)</div>
+      </div>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePhoto(event)">
+    <button class="btn btn-green" onclick="completeHabit()">Complete & Earn Credits ✓</button>
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- TIMER OVERLAY -->
+
+<div class="timer-overlay" id="timer-overlay">
+  <div class="timer-title" id="timer-app-title">Instagram unlocked</div>
+  <div class="timer-sub" id="timer-app-sub">Stay mindful. Close when done.</div>
+  <div class="timer-ring-wrap">
+    <svg class="timer-ring-svg" viewBox="0 0 220 220">
+      <circle class="timer-ring-bg" cx="110" cy="110" r="95"/>
+      <circle class="timer-ring-fill" id="timer-ring" cx="110" cy="110" r="95"
+        stroke-dasharray="597" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-center">
+      <div class="timer-time" id="timer-display">00:00</div>
+      <div class="timer-app-name" id="timer-app-label">Time remaining</div>
+    </div>
+  </div>
+  <button class="btn btn-red" style="width:200px" onclick="endTimer()">End Session Early</button>
+</div>
+
+<!-- TOAST -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── FULL HABIT LIBRARY ───────────────────────────────────────────────────────
+const ALL_HABITS = [
+  // Physical
+  { id: 'walk', icon: '🚶', name: 'Walk 20 min', desc: 'Step outside. Fresh air resets your dopamine baseline.', credits: 15, needsPhoto: true, category: 'Physical' },
+  { id: 'workout', icon: '💪', name: 'Workout / Exercise', desc: 'Gym, yoga, run, or any sweat session.', credits: 20, needsPhoto: true, category: 'Physical' },
+  { id: 'stretch', icon: '🙆', name: 'Stretch 10 min', desc: 'Full body stretch or mobility work. Undo the desk damage.', credits: 8, needsPhoto: false, category: 'Physical' },
+  { id: 'sport', icon: '⚽', name: 'Play a sport', desc: 'Any sport with others — badminton, basketball, cricket, anything.', credits: 18, needsPhoto: true, category: 'Physical' },
+  // Mental
+  { id: 'read', icon: '📖', name: 'Read 20 min', desc: 'A book, not a feed. Give your brain deep focus time.', credits: 12, needsPhoto: false, category: 'Mental' },
+  { id: 'meditate', icon: '🧘', name: 'Meditate', desc: '10 minutes of silence. Sit, breathe, observe.', credits: 10, needsPhoto: false, category: 'Mental' },
+  { id: 'breathe', icon: '🫁', name: 'Deep Breathing', desc: '5 min of box breathing or 4-7-8 technique.', credits: 8, needsPhoto: false, category: 'Mental' },
+  { id: 'learn', icon: '🎓', name: 'Learn something new', desc: 'Watch a lecture, course, or read a non-fiction article.', credits: 12, needsPhoto: false, category: 'Mental' },
+  // Productivity
+  { id: 'deepwork', icon: '🎯', name: 'Deep Work 1hr', desc: 'One hour of focused, distraction-free work on one task.', credits: 25, needsPhoto: false, category: 'Productivity' },
+  { id: 'nophone', icon: '📵', name: 'Phone-free meal', desc: 'Eat one meal today without any screens.', credits: 12, needsPhoto: false, category: 'Productivity' },
+  { id: 'project', icon: '🛠️', name: 'Work on Project', desc: 'Put real time into your personal or academic project.', credits: 20, needsPhoto: false, category: 'Productivity' },
+  { id: 'goals', icon: '📋', name: 'Plan your day', desc: 'Write out your 3 most important tasks before you start.', credits: 8, needsPhoto: false, category: 'Productivity' },
+  // Health
+  { id: 'hydrate', icon: '💧', name: 'Drink 8 glasses', desc: 'Track your water intake. Most brain fog is dehydration.', credits: 8, needsPhoto: false, category: 'Health' },
+  { id: 'sleep8', icon: '😴', name: 'Sleep 8 hours', desc: 'Log a full night of sleep. Rest is non-negotiable.', credits: 15, needsPhoto: false, category: 'Health' },
+  { id: 'nosugar', icon: '🚫🍭', name: 'No sugar today', desc: 'Avoid added sugars for the whole day. Steady energy = better focus.', credits: 18, needsPhoto: false, category: 'Health' },
+  { id: 'healthyeat', icon: '🥗', name: 'Healthy eating', desc: 'Eat at least 2 proper balanced meals with veggies today.', credits: 15, needsPhoto: true, category: 'Health' },
+  // Creative
+  { id: 'draw', icon: '🎨', name: 'Draw / Sketch', desc: 'Doodle, sketch, or work on any visual art for 15+ min.', credits: 12, needsPhoto: true, category: 'Creative' },
+  { id: 'music', icon: '🎵', name: 'Play / make music', desc: 'Practice an instrument or make a beat. Creative output only.', credits: 15, needsPhoto: false, category: 'Creative' },
+  { id: 'write', icon: '✍️', name: 'Creative writing', desc: 'Write a story, poem, essay, or journal entry.', credits: 12, needsPhoto: false, category: 'Creative' },
+  { id: 'journal', icon: '📓', name: 'Journal / Gratitude', desc: 'Write 3 things you\'re grateful for or reflect on your day.', credits: 10, needsPhoto: false, category: 'Creative' },
+  // Study
+  { id: 'java', icon: '☕', name: 'Java practice', desc: 'Write Java code, solve problems, or study OOP concepts.', credits: 20, needsPhoto: false, category: 'Study' },
+  { id: 'dsa', icon: '🔗', name: 'DSA problem', desc: 'Solve at least one Data Structures & Algorithms problem.', credits: 22, needsPhoto: false, category: 'Study' },
+  { id: 'aptitude', icon: '🧮', name: 'Aptitude practice', desc: 'Practice quant, reasoning, or verbal aptitude questions.', credits: 18, needsPhoto: false, category: 'Study' },
+  { id: 'academia', icon: '🏫', name: 'Academia / Coursework', desc: 'Study syllabus material, revise notes, or complete assignments.', credits: 20, needsPhoto: false, category: 'Study' },
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const STATE_KEY = 'unrot_v2';
+let state = JSON.parse(localStorage.getItem(STATE_KEY) || 'null') || {
+  credits: 0,
+  totalEarned: 0,
+  streak: 0,
+  lastCompletedDate: null,
+  completedToday: [],
+  history: [],
+  days: {},
+  selectedHabits: ['walk','workout','journal','deepwork','nosugar','java','dsa','read','meditate','project'],
+  sleepSettings: { bedtime: false, morning: false, bedtimeTime: '22:00', morningTime: '08:00' }
+};
+if (!state.selectedHabits) state.selectedHabits = ALL_HABITS.slice(0,10).map(h=>h.id);
+function getActiveHabits() { return ALL_HABITS.filter(h => state.selectedHabits.includes(h.id)); }
+
+function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+
+const APPS = [
+  { id: 'instagram', icon: '📸', name: 'Instagram', desc: 'Photo & stories app' },
+  { id: 'tiktok', icon: '🎵', name: 'TikTok', desc: 'Short videos' },
+  { id: 'twitter', icon: '🐦', name: 'X / Twitter', desc: 'News & microblogging' },
+  { id: 'youtube', icon: '▶️', name: 'YouTube', desc: 'Video platform' },
+  { id: 'reddit', icon: '🔴', name: 'Reddit', desc: 'Forum & communities' },
+  { id: 'snapchat', icon: '👻', name: 'Snapchat', desc: 'Messaging & snaps' },
+];
+
+const TIME_OPTIONS = [
+  { label: '5 min', minutes: 5, cost: 3 },
+  { label: '15 min', minutes: 15, cost: 8 },
+  { label: '30 min', minutes: 30, cost: 15 },
+  { label: '1 hour', minutes: 60, cost: 25 },
+];
+
+// ─── MORNING CHECKLIST ────────────────────────────────────────────────────────
+const MORNING_ITEMS = [
+  { id: 'drink_water', label: 'Drink a glass of water', icon: '💧' },
+  { id: 'no_phone_5', label: 'No phone for 5 min after waking', icon: '🚫' },
+  { id: 'sunlight', label: 'Get sunlight or go outside', icon: '☀️' },
+  { id: 'stretch', label: 'Stretch or light movement', icon: '🙆' },
+  { id: 'intention', label: 'Set one intention for the day', icon: '🎯' },
+];
+
+// ─── CURRENT SELECTIONS ──────────────────────────────────────────────────────
+let currentHabit = null;
+let selectedApp = null;
+let selectedTime = 1;
+let timerInterval = null;
+let timerRemaining = 0;
+let timerTotal = 0;
+
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function checkDayReset() {
+  const today = todayStr();
+  const last = state.lastCompletedDate;
+  if (last !== today) {
+    // Check streak
+    if (last) {
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().split('T')[0];
+      if (last === yStr && state.completedToday.length > 0) {
+        state.streak++;
+      } else if (last !== today) {
+        state.streak = 0;
+      }
+    }
+    state.completedToday = [];
+    saveState();
+  }
+}
+
+// ─── BRAIN STATE ─────────────────────────────────────────────────────────────
+function getBrainState(pct) {
+  if (pct >= 80) return { label: 'Thriving! 🌟', sub: 'Your brain is fully recharged', color: '#4caf7d', mouth: 'M68 96 Q80 106 92 96' };
+  if (pct >= 60) return { label: 'Feeling good ✨', sub: 'Keep the habits going', color: '#7bc47d', mouth: 'M70 97 Q80 104 90 97' };
+  if (pct >= 40) return { label: 'Getting better', sub: 'A few more habits will help', color: '#e8a030', mouth: 'M72 98 Q80 102 88 98' };
+  if (pct >= 20) return { label: 'Feeling foggy', sub: 'Complete habits to recharge', color: '#c07830', mouth: 'M72 99 Q80 99 88 99' };
+  return { label: 'Brainrotted 😵', sub: 'You need a detox. Start now.', color: '#e05555', mouth: 'M72 101 Q80 97 88 101' };
+}
+
+function updateBrainUI() {
+  const activeHabits = getActiveHabits();
+  const done = state.completedToday.length;
+  const total = activeHabits.length;
+  const pct = Math.round((done / total) * 100);
+  const bs = getBrainState(pct);
+
+  document.getElementById('health-fill').style.width = pct + '%';
+  document.getElementById('health-fill').style.background = bs.color;
+  document.getElementById('health-pct').textContent = pct + '%';
+  document.getElementById('brain-state-label').textContent = bs.label;
+  document.getElementById('brain-state-label').style.color = bs.color;
+  document.getElementById('brain-state-sub').textContent = bs.sub;
+  document.getElementById('brain-glow').style.setProperty('--brain-color', bs.color);
+  document.getElementById('brain-glow').style.background = `radial-gradient(circle, ${bs.color} 0%, transparent 70%)`;
+
+  // Update pupils color
+  document.getElementById('pupil-l').setAttribute('fill', bs.color);
+  document.getElementById('pupil-r').setAttribute('fill', bs.color);
+  // Update mouth
+  document.getElementById('brain-mouth').setAttribute('d', bs.mouth);
+
+  // Update brain body fill based on state
+  const bodyEls = document.querySelectorAll('#brain-body ellipse');
+  const colors = pct > 50 ? ['#1a2a1a','#1e3020','#243a28'] : pct > 20 ? ['#2a2010','#332810','#3d3018'] : ['#2a1010','#331810','#3d2018'];
+  bodyEls[0].setAttribute('fill', colors[0]);
+  bodyEls[1].setAttribute('fill', colors[1]);
+  bodyEls[2].setAttribute('fill', colors[1]);
+  bodyEls[3].setAttribute('fill', colors[2]);
+}
+
+// ─── RENDER HOME ──────────────────────────────────────────────────────────────
+function renderHome() {
+  checkDayReset();
+
+  // Date label
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  document.getElementById('date-label').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+  const activeHabits = getActiveHabits();
+  document.getElementById('credit-count').textContent = state.credits;
+  document.getElementById('streak-count').textContent = state.streak;
+  document.getElementById('today-done-count').textContent = state.completedToday.length + '/' + activeHabits.length;
+  document.getElementById('total-credits-earned').textContent = state.totalEarned;
+
+  const list = document.getElementById('habit-list');
+  list.innerHTML = '';
+  activeHabits.forEach(h => {
+    const done = state.completedToday.includes(h.id);
+    const card = document.createElement('div');
+    card.className = 'habit-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="habit-icon">${h.icon}</div>
+      <div class="habit-info">
+        <div class="habit-name" style="${done ? 'text-decoration:line-through;opacity:0.5' : ''}">${h.name}</div>
+        <div class="habit-desc">${h.desc}</div>
+      </div>
+      <div class="habit-reward ${done ? 'earned' : ''}">+${h.credits}⚡</div>
+      <div class="habit-check">${done ? '✓' : ''}</div>
+    `;
+    if (!done) card.onclick = () => openHabitModal(h);
+    list.appendChild(card);
+  });
+
+  updateBrainUI();
+}
+
+// ─── HABIT PICKER ─────────────────────────────────────────────────────────────
+function openPicker() {
+  renderPicker();
+  document.getElementById('picker-modal').classList.add('open');
+}
+function closePicker() {
+  document.getElementById('picker-modal').classList.remove('open');
+  saveState();
+  renderHome();
+}
+function renderPicker() {
+  const scroll = document.getElementById('picker-scroll');
+  scroll.innerHTML = '';
+  const categories = [...new Set(ALL_HABITS.map(h => h.category))];
+  categories.forEach(cat => {
+    const catLabel = document.createElement('div');
+    catLabel.className = 'cat-label';
+    catLabel.textContent = cat;
+    scroll.appendChild(catLabel);
+    ALL_HABITS.filter(h => h.category === cat).forEach(h => {
+      const selected = state.selectedHabits.includes(h.id);
+      const row = document.createElement('div');
+      row.className = 'picker-row';
+      row.innerHTML = `
+        <div class="picker-row-icon">${h.icon}</div>
+        <div class="picker-row-info">
+          <div class="picker-row-name">${h.name}</div>
+          <div class="picker-row-meta">+${h.credits}⚡ · ${h.category}</div>
+        </div>
+        <div class="picker-check ${selected ? 'on' : ''}">${selected ? '✓' : ''}</div>
+      `;
+      row.onclick = () => toggleHabitPicker(h.id, row.querySelector('.picker-check'));
+      scroll.appendChild(row);
+    });
+  });
+  updatePickerCount();
+}
+function toggleHabitPicker(id, checkEl) {
+  const idx = state.selectedHabits.indexOf(id);
+  if (idx === -1) {
+    state.selectedHabits.push(id);
+    checkEl.classList.add('on');
+    checkEl.textContent = '✓';
+  } else {
+    if (state.selectedHabits.length <= 1) { showToast('Keep at least 1 habit! 😅'); return; }
+    state.selectedHabits.splice(idx, 1);
+    checkEl.classList.remove('on');
+    checkEl.textContent = '';
+  }
+  updatePickerCount();
+}
+function updatePickerCount() {
+  document.getElementById('picker-count-label').textContent = `${state.selectedHabits.length} habits selected`;
+}
+
+// ─── HABIT MODAL ─────────────────────────────────────────────────────────────
+function openHabitModal(habit) {
+  currentHabit = habit;
+  document.getElementById('modal-habit-name').textContent = habit.icon + ' ' + habit.name;
+  document.getElementById('modal-habit-desc').textContent = habit.desc;
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('photo-placeholder').style.display = 'flex';
+  document.getElementById('photo-placeholder').style.flexDirection = 'column';
+  document.getElementById('photo-placeholder').style.alignItems = 'center';
+  document.getElementById('photo-placeholder').style.gap = '8px';
+  document.querySelector('.photo-area-text').textContent = habit.needsPhoto ? 'Tap to take proof photo (optional)' : 'No photo needed for this one!';
+  document.getElementById('habit-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('habit-modal').classList.remove('open');
+  currentHabit = null;
+}
+
+function triggerPhoto() {
+  if (currentHabit) document.getElementById('photo-input').click();
+}
+
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('photo-preview');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('photo-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function completeHabit() {
+  if (!currentHabit) return;
+  const today = todayStr();
+  state.completedToday.push(currentHabit.id);
+  state.credits += currentHabit.credits;
+  state.totalEarned += currentHabit.credits;
+  state.lastCompletedDate = today;
+  if (!state.days[today]) state.days[today] = [];
+  state.days[today].push(currentHabit.id);
+  state.history.unshift({ name: currentHabit.name, icon: currentHabit.icon, credits: currentHabit.credits, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), date: today });
+  if (state.history.length > 50) state.history.pop();
+  saveState();
+  closeModal();
+  showToast(`+${currentHabit.credits} credits earned! ⚡`);
+  showCreditBurst(currentHabit.credits);
+  renderHome();
+  document.getElementById('spend-credit-big').textContent = state.credits;
+}
+
+// ─── SPEND SCREEN ─────────────────────────────────────────────────────────────
+function renderSpend() {
+  document.getElementById('spend-credit-big').textContent = state.credits;
+  const list = document.getElementById('unlock-list');
+  list.innerHTML = '';
+  APPS.forEach(app => {
+    const card = document.createElement('div');
+    card.className = 'unlock-card';
+    const timePicker = TIME_OPTIONS.map((t, i) => `
+      <div class="time-chip ${i === 1 ? 'selected' : ''}" onclick="selectTime(this,'${app.id}',${i})">${t.label}<br><small style="font-size:10px;font-weight:400;color:var(--text-dim)">${t.cost}⚡</small></div>
+    `).join('');
+    card.innerHTML = `
+      <div class="unlock-header">
+        <div class="unlock-icon">${app.icon}</div>
+        <div><div class="unlock-name">${app.name}</div><div class="unlock-desc">${app.desc}</div></div>
+      </div>
+      <div class="time-picker" id="picker-${app.id}">${timePicker}</div>
+      <div class="cost-row">
+        <span>Cost</span><span class="cost-val" id="cost-${app.id}">${TIME_OPTIONS[1].cost} credits</span>
+      </div>
+      <button class="btn btn-primary" onclick="startTimer('${app.id}')">Unlock Session ⚡</button>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function selectTime(el, appId, idx) {
+  document.querySelectorAll(`#picker-${appId} .time-chip`).forEach((c,i) => c.classList.toggle('selected', i === idx));
+  document.getElementById(`cost-${appId}`).textContent = TIME_OPTIONS[idx].cost + ' credits';
+  el.dataset.selected = idx;
+}
+
+function getSelectedTimeIdx(appId) {
+  const chips = document.querySelectorAll(`#picker-${appId} .time-chip`);
+  for (let i = 0; i < chips.length; i++) { if (chips[i].classList.contains('selected')) return i; }
+  return 1;
+}
+
+function startTimer(appId) {
+  const app = APPS.find(a => a.id === appId);
+  const idx = getSelectedTimeIdx(appId);
+  const opt = TIME_OPTIONS[idx];
+  if (state.credits < opt.cost) { showToast('Not enough credits! Earn more first. 💪'); return; }
+  state.credits -= opt.cost;
+  saveState();
+  renderHome();
+  document.getElementById('spend-credit-big').textContent = state.credits;
+
+  timerTotal = opt.minutes * 60;
+  timerRemaining = timerTotal;
+  document.getElementById('timer-app-title').textContent = app.icon + ' ' + app.name + ' unlocked';
+  document.getElementById('timer-app-sub').textContent = `Enjoy ${opt.label}. Stay mindful.`;
+  document.getElementById('timer-overlay').classList.add('open');
+  updateTimerDisplay();
+
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) endTimer();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerRemaining / 60).toString().padStart(2, '0');
+  const s = (timerRemaining % 60).toString().padStart(2, '0');
+  document.getElementById('timer-display').textContent = `${m}:${s}`;
+  const circ = 2 * Math.PI * 95;
+  const offset = circ * (1 - timerRemaining / timerTotal);
+  document.getElementById('timer-ring').style.strokeDashoffset = offset;
+}
+
+function endTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('timer-overlay').classList.remove('open');
+  showToast('Session ended. Great job! 🧠');
+}
+
+// ─── PROGRESS SCREEN ─────────────────────────────────────────────────────────
+function renderProgress() {
+  // 28 day grid
+  const grid = document.getElementById('day-grid');
+  grid.innerHTML = '';
+  const today = new Date();
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    const done = (state.days[key] || []).length;
+    const isToday = key === todayStr();
+    const cell = document.createElement('div');
+    cell.className = 'day-cell ' + (done >= 4 ? 'filled' : done >= 1 ? 'partial' : 'empty') + (isToday ? ' today' : '');
+    cell.title = key;
+    grid.appendChild(cell);
+  }
+
+  // Stats
+  const sg = document.getElementById('stat-grid');
+  const totalDays = Object.keys(state.days).filter(d => state.days[d].length > 0).length;
+  const totalHabits = Object.values(state.days).reduce((a,b) => a + b.length, 0);
+  sg.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${state.totalEarned}</div><div class="stat-lbl">Credits Earned</div></div>
+    <div class="stat-card"><div class="stat-num">${state.streak}</div><div class="stat-lbl">Day Streak 🔥</div></div>
+    <div class="stat-card"><div class="stat-num">${totalDays}</div><div class="stat-lbl">Active Days</div></div>
+    <div class="stat-card"><div class="stat-num">${totalHabits}</div><div class="stat-lbl">Total Habits</div></div>
+  `;
+
+  // History
+  const hl = document.getElementById('history-list');
+  hl.innerHTML = '';
+  if (state.history.length === 0) {
+    hl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:14px">No habits completed yet.<br>Head to Brain tab to get started!</div>';
+    return;
+  }
+  state.history.slice(0, 15).forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    el.innerHTML = `<div><div class="history-name">${h.icon} ${h.name}</div><div class="history-time">${h.date} at ${h.time}</div></div><div class="history-credits">+${h.credits}⚡</div>`;
+    hl.appendChild(el);
+  });
+}
+
+// ─── SLEEP SCREEN ─────────────────────────────────────────────────────────────
+function renderSleep() {
+  const s = state.sleepSettings;
+  document.getElementById('bedtime-toggle').classList.toggle('on', s.bedtime);
+  document.getElementById('morning-toggle').classList.toggle('on', s.morning);
+  document.getElementById('bedtime-time').value = s.bedtimeTime;
+  document.getElementById('morning-time').value = s.morningTime;
+
+  const mc = document.getElementById('morning-checklist');
+  mc.innerHTML = '';
+  const morningDone = state.days[todayStr() + '_morning'] || [];
+  MORNING_ITEMS.forEach(item => {
+    const done = morningDone.includes(item.id);
+    const row = document.createElement('div');
+    row.className = 'sleep-row';
+    row.innerHTML = `
+      <div>
+        <div class="sleep-row-label">${item.icon} ${item.label}</div>
+      </div>
+      <div class="habit-check" style="cursor:pointer;${done ? 'background:var(--green);border-color:var(--green)' : ''}" onclick="toggleMorning('${item.id}', this)">${done ? '✓' : ''}</div>
+    `;
+    mc.appendChild(row);
+  });
+}
+
+function toggleMorning(id, el) {
+  const key = todayStr() + '_morning';
+  if (!state.days[key]) state.days[key] = [];
+  const idx = state.days[key].indexOf(id);
+  if (idx === -1) {
+    state.days[key].push(id);
+    el.innerHTML = '✓';
+    el.style.background = 'var(--green)';
+    el.style.borderColor = 'var(--green)';
+  } else {
+    state.days[key].splice(idx, 1);
+    el.innerHTML = '';
+    el.style.background = '';
+    el.style.borderColor = '';
+  }
+  saveState();
+}
+
+function toggleSleep(which) {
+  state.sleepSettings[which] = !state.sleepSettings[which];
+  saveState();
+  renderSleep();
+}
+
+// Persist time inputs
+document.getElementById('bedtime-time').addEventListener('change', e => { state.sleepSettings.bedtimeTime = e.target.value; saveState(); });
+document.getElementById('morning-time').addEventListener('change', e => { state.sleepSettings.morningTime = e.target.value; saveState(); });
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['home','spend','progress','sleep'].forEach(t => {
+    document.getElementById('screen-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'home') renderHome();
+  if (tab === 'spend') renderSpend();
+  if (tab === 'progress') renderProgress();
+  if (tab === 'sleep') renderSleep();
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function showCreditBurst(credits) {
+  const el = document.createElement('div');
+  el.className = 'credit-burst';
+  el.textContent = '+' + credits + '⚡';
+  el.style.left = (40 + Math.random() * 40) + '%';
+  el.style.top = '40%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+checkDayReset();
+renderHome();
+</script>
+
+</body>
+</html>
